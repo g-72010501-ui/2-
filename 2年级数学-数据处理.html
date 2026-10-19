@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二年级数学：数据处理与条形统计图</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #FFF9C4, #E1F5FE);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 950px;
+            background: #FFFFFF;
+            border: 6px solid #4FC3F7;
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            position: relative;
+            min-height: 640px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 顶部导航栏 */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #E0F7FA;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .step-indicator {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #0288D1;
+        }
+
+        .mode-btn {
+            background: #FFB74D;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* 页面显示与切换 */
+        .page {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+            text-align: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #0277BD;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        p.desc {
+            font-size: 1.05rem;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        /* 主题选择与卡片选择 */
+        .topic-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .topic-btn {
+            background: #E1F5FE;
+            border: 2px solid #0288D1;
+            color: #0277BD;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .topic-btn.active {
+            background: #0288D1;
+            color: white;
+        }
+
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 12px;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 15px;
+        }
+
+        .item-card {
+            background: #FFF8E1;
+            border: 3px solid #FFE082;
+            border-radius: 15px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .item-card:hover, .item-card.selected {
+            background: #FFE082;
+            transform: scale(1.05);
+            border-color: #FFB74D;
+        }
+
+        .item-icon {
+            font-size: 2.5rem;
+            margin-bottom: 4px;
+        }
+
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #5D4037;
+        }
+
+        /* 页面二：同学投票卡片列表 */
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 750px;
+            margin-bottom: 15px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #FAFAFA;
+            border-radius: 12px;
+            border: 2px dashed #B2EBF2;
+        }
+
+        .student-item {
+            background: white;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            padding: 6px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.3;
+            transition: all 0.2s;
+        }
+
+        .student-item.voted {
+            opacity: 1;
+            border-color: #81C784;
+            background: #E8F5E9;
+        }
+
+        .student-avatar { font-size: 1.8rem; }
+        .student-choice { font-size: 1.1rem; margin-top: 2px; }
+
+        /* 左右分栏布局 */
+        .split-container {
+            display: flex;
+            width: 100%;
+            gap: 15px;
+            align-items: stretch;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .split-left, .split-right {
+            flex: 1;
+            background: #FAF8F5;
+            border: 2px solid #E0E0E0;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .split-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #0277BD;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #B2EBF2;
+            padding-bottom: 5px;
+            width: 100%;
+        }
+
+        /* 记数控制表格 */
+        .tally-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #E1F5FE;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .tally-table th, .tally-table td {
+            border: 1px solid #81D4FA;
+            padding: 6px 4px;
+            font-size: 1rem;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .tally-table th { background: #29B6F6; color: white; }
+
+        .tally-marks-container {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+        }
+
+        .btn-mini {
+            background: #FFB74D;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 2px;
+        }
+
+        .tally-input {
+            width: 50px;
+            padding: 4px;
+            font-size: 1rem;
+            text-align: center;
+            border: 2px solid #4FC3F7;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        /* 页面四：条形统计图 (Bar Chart) */
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 240px;
+            width: 100%;
+            border-left: 3px solid #37474F;
+            border-bottom: 3px solid #37474F;
+            padding: 5px 5px 0 5px;
+            position: relative;
+            background: #FFF;
+        }
+
+        .chart-column {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            margin: 0 4px;
+        }
+
+        .chart-block {
+            width: 100%;
+            height: 22px;
+            border: 1px solid #FFF;
+            border-radius: 3px;
+            background: #E0E0E0;
+            cursor: pointer;
+            margin-bottom: 1px;
+            transition: background 0.15s;
+        }
+
+        .chart-block.active { background: #42A5F5; }
+        .chart-label { margin-top: 6px; font-size: 0.85rem; font-weight: bold; color: #37474F; }
+        .chart-count { font-size: 1rem; font-weight: bold; color: #1E88E5; margin-bottom: 2px; }
+
+        /* 通用按钮与提示 */
+        .btn {
+            background: #66BB6A;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 1.05rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px #388E3C;
+            transition: all 0.2s;
+            margin: 4px;
+        }
+
+        .btn:hover { background: #81C784; }
+        .btn:active { box-shadow: 0 2px #388E3C; transform: translateY(2px); }
+        .btn-secondary { background: #FFA726; box-shadow: 0 4px #F57C00; }
+        .btn-secondary:hover { background: #FFB74D; }
+
+        .feedback-box {
+            min-height: 36px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 6px 0;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feedback-box.correct { background: #E8F5E9; color: #2E7D32; border: 2px solid #A5D6A7; }
+        .feedback-box.wrong { background: #FFEBEE; color: #C62828; border: 2px solid #EF9A9A; }
+
+        .hidden { display: none !important; }
+
+        /* 手机适配视图 */
+        body.mobile-view #app-container { max-width: 420px; }
+        body.mobile-view .student-grid { grid-template-columns: repeat(3, 1fr); }
+        body.mobile-view .split-container { flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- 顶部导航 -->
+        <div class="top-bar">
+            <div class="step-indicator" id="step-title">步骤 1/4: 调查主题选择</div>
+            <button class="mode-toggle mode-btn" onclick="toggleViewMode()">📱/💻 切换模式</button>
+        </div>
+
+        <!-- 页面一：主题与投票选项 -->
+        <div id="page-1" class="page active">
+            <h2>📊 选择你喜欢的调查主题 📊</h2>
+            <div class="topic-selector">
+                <button class="topic-btn active" onclick="changeTopic('fruit')">🍎 喜欢吃的水果</button>
+                <button class="topic-btn" onclick="changeTopic('pet')">🐶 想要的宠物</button>
+                <button class="topic-btn" onclick="changeTopic('birthday')">🎂 生日季节/月份</button>
+            </div>
+            <p class="desc" id="p1-desc">请选择你最喜欢的一种，投出宝贵一票吧！</p>
+            <div class="item-grid" id="item-grid"></div>
+            <div id="p1-feedback" class="feedback-box"></div>
+            <button id="p1-next" class="btn hidden" onclick="goToPage(2)">确认投票，下一步 ➡️</button>
+        </div>
+
+        <!-- 页面二：全班同学举牌投票动画 -->
+        <div id="page-2" class="page">
+            <h2>全班同学正在举牌投票 🙋‍♂️🙋‍♀️</h2>
+            <p class="desc">正在收集全班 15 位同学的投票结果...</p>
+            <div class="student-grid" id="student-grid"></div>
+            <div id="p2-feedback" class="feedback-box"></div>
+            <div>
+                <button class="btn btn-secondary" onclick="skipAnimation()">⏩ 跳过动画</button>
+                <button id="p2-next" class="btn hidden" onclick="goToPage(3)">整理数据，下一步 ➡️</button>
+            </div>
+        </div>
+
+        <!-- 页面三：左边看结果，右边填写记数符号与数值 -->
+        <div id="page-3" class="page">
+            <h2>📝 练习：填写记数符号 (Tally Marks)</h2>
+            <p class="desc">参考左边的投票结果，在右边划红/紫色记数符号与对应的人数：</p>
+            
+            <div class="split-container">
+                <!-- 左边：上一页结果 -->
+                <div class="split-left">
+                    <div class="split-title">👀 左边：全班投票卡片</div>
+                    <div class="student-grid" id="left-student-grid" style="grid-template-columns: repeat(3, 1fr); max-height: 280px;"></div>
+                </div>
+
+                <!-- 右边：填写记数表格 -->
+                <div class="split-right">
+                    <div class="split-title">✍️ 右边：划记数符号与人数</div>
+                    <table class="tally-table">
+                        <thead>
+                            <tr>
+                                <th>项目</th>
+                                <th>记数符号</th>
+                                <th>人数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tally-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="p3-feedback" class="feedback-box"></div>
+            <div>
+                <button class="btn" onclick="checkPage3Answer()">检查答案 ✔️</button>
+                <button id="p3-next" class="btn btn-secondary hidden" onclick="goToPage(4)">制作条形统计图 ➡️</button>
+            </div>
+        </div>
+
+        <!-- 页面四：左边看表格数据，右边制作条形图 -->
+        <div id="page-4" class="page">
+            <h2>📈 练习：制作条形统计图 (Bar Chart)</h2>
+            <p class="desc">参照左边整理好的数据，点击右边格子调整条形图的高度：</p>
+            
+            <div class="split-container">
+                <!-- 左边：页面三已核对的数据表 -->
+                <div class="split-left" style="flex:0.9;">
+                    <div class="split-title">📋 左边：数据统计表</div>
+                    <table class="tally-table" style="margin-top:10px;">
+                        <thead>
+                            <tr>
+                                <th>项目</th>
+                                <th>记数符号</th>
+                                <th>人数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="p4-tally-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 右边：条形统计图交互区 -->
+                <div class="split-right" style="flex:1.1;">
+                    <div class="split-title">📊 右边：点击格子加/减高度</div>
+                    <div class="chart-container" id="chart-container"></div>
+                </div>
+            </div>
+
+            <div id="p4-feedback" class="feedback-box"></div>
+            <div>
+                <button class="btn" onclick="checkPage4Answer()">检查统计图 ✔️</button>
+                <button id="p4-reset" class="btn btn-secondary hidden" onclick="resetAll()">🔄 选择其他主题重新玩</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 预设主题库
+        const topics = {
+            fruit: {
+                title: "你最喜欢什么水果？",
+                items: [
+                    { name: "西瓜", icon: "🍉", count: 5 },
+                    { name: "香蕉", icon: "🍌", count: 4 },
+                    { name: "芒果", icon: "🥭", count: 4 },
+                    { name: "木瓜", icon: "🍈", count: 2 }
+                ]
+            },
+            pet: {
+                title: "你最想要什么宠物？",
+                items: [
+                    { name: "狗", icon: "🐶", count: 5 },
+                    { name: "猫", icon: "🐱", count: 4 },
+                    { name: "兔子", icon: "🐰", count: 3 },
+                    { name: "乌龟", icon: "🐢", count: 3 }
+                ]
+            },
+            birthday: {
+                title: "你的生日在哪个季节/月份？",
+                items: [
+                    { name: "1-3月", icon: "🌸", count: 4 },
+                    { name: "4-6月", icon: "☀️", count: 5 },
+                    { name: "7-9月", icon: "🍁", count: 4 },
+                    { name: "10-12月", icon: "❄️", count: 2 }
+                ]
+            }
+        };
+
+        let currentTopicKey = 'fruit';
+        let currentItems = [];
+        let classmates = [];
+        let userTallyCounts = [0, 0, 0, 0];
+        let chartHeights = [0, 0, 0, 0];
+        let p3Attempts = 0;
+        let p4Attempts = 0;
+        let animationTimer = null;
+
+        // 切换视图模式
+        function toggleViewMode() {
+            document.body.classList.toggle('mobile-view');
+        }
+
+        // 页面一：切换主题
+        function changeTopic(key) {
+            currentTopicKey = key;
+            document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            document.getElementById('p1-desc').innerText = topics[key].title;
+            renderTopicItems();
+        }
+
+        function renderTopicItems() {
+            const grid = document.getElementById('item-grid');
+            grid.innerHTML = '';
+            currentItems = topics[currentTopicKey].items;
+
+            currentItems.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.onclick = () => selectItem(idx);
+                card.innerHTML = `
+                    <div class="item-icon">${item.icon}</div>
+                    <div class="item-name">${item.name}</div>
+                `;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('p1-feedback').innerText = '';
+            document.getElementById('p1-next').classList.add('hidden');
+        }
+
+        function selectItem(idx) {
+            document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.item-card')[idx].classList.add('selected');
+
+            const item = currentItems[idx];
+            document.getElementById('p1-feedback').className = "feedback-box correct";
+            document.getElementById('p1-feedback').innerText = `✨ 你选择了【${item.name} ${item.icon}】！`;
+            document.getElementById('p1-next').classList.remove('hidden');
+
+            generateClassmatesData(idx);
+        }
+
+        function generateClassmatesData(userChoiceIdx) {
+            classmates = [];
+            const names = ["小明","小丽","阿敏","康康","佳佳","阿强","美美","欢欢","小华","东东","玲玲","杰克","莉莉","轩轩"];
+            const avatars = ["👦","👧","👩","👨","👧","👦","👧","👦","👦","👨","👧","👦","👧","👦"];
+
+            let itemPool = [];
+            currentItems.forEach((it, i) => {
+                let target = it.count;
+                if (i === userChoiceIdx) target -= 1;
+                for (let k = 0; k < target; k++) {
+                    itemPool.push(it.icon);
+                }
+            });
+
+            itemPool.sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < 14; i++) {
+                classmates.push({
+                    name: names[i],
+                    avatar: avatars[i],
+                    choice: itemPool[i] || currentItems[0].icon
+                });
+            }
+            classmates.push({
+                name: "我",
+                avatar: "⭐",
+                choice: currentItems[userChoiceIdx].icon
+            });
+        }
+
+        // 页面切换
+        function goToPage(pageNum) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${pageNum}`).classList.add('active');
+
+            const titles = [
+                "步骤 1/4: 调查主题选择",
+                "步骤 2/4: 全班举牌投票",
+                "步骤 3/4: 对照卡片填写记数与数值",
+                "步骤 4/4: 对照数据表制作条形图"
+            ];
+            document.getElementById('step-title').innerText = titles[pageNum - 1];
+
+            if (pageNum === 2) startVotingAnimation();
+            if (pageNum === 3) initPage3();
+            if (pageNum === 4) initPage4();
+        }
+
+        // 页面二：投票动画
+        function startVotingAnimation() {
+            const grid = document.getElementById('student-grid');
+            grid.innerHTML = '';
+            
+            classmates.forEach((c, idx) => {
+                const item = document.createElement('div');
+                item.className = 'student-item';
+                item.id = `student-${idx}`;
+                item.innerHTML = `
+                    <div class="student-avatar">${c.avatar}</div>
+                    <div style="font-size:0.75rem; color:#666;">${c.name}</div>
+                    <div class="student-choice">${c.choice}</div>
+                `;
+                grid.appendChild(item);
+            });
+
+            let current = 0;
+            if (animationTimer) clearInterval(animationTimer);
+
+            animationTimer = setInterval(() => {
+                if (current < classmates.length) {
+                    document.getElementById(`student-${current}`).classList.add('voted');
+                    current++;
+                } else {
+                    clearInterval(animationTimer);
+                    document.getElementById('p2-feedback').className = "feedback-box correct";
+                    document.getElementById('p2-feedback').innerText = "🎉 全班 15 位同学投票完成！";
+                    document.getElementById('p2-next').classList.remove('hidden');
+                }
+            }, 180);
+        }
+
+        function skipAnimation() {
+            if (animationTimer) clearInterval(animationTimer);
+            classmates.forEach((_, idx) => {
+                const el = document.getElementById(`student-${idx}`);
+                if (el) el.classList.add('voted');
+            });
+            document.getElementById('p2-feedback').className = "feedback-box correct";
+            document.getElementById('p2-feedback').innerText = "🎉 已快速收集完全班 15 位同学的数据！";
+            document.getElementById('p2-next').classList.remove('hidden');
+        }
+
+        // 生成课本标准 4竖+1斜 SVG 记数组件
+        function renderTallySVG(num) {
+            if (num <= 0) return `<span style="color:#aaa; font-size:0.85rem;">无</span>`;
+            
+            const fullGroups = Math.floor(num / 5);
+            const remainder = num % 5;
+            let html = `<div class="tally-marks-container">`;
+
+            // 满 5 的整组：4条红竖线 + 1条紫斜线
+            for (let g = 0; g < fullGroups; g++) {
+                html += `
+                    <svg width="42" height="30" viewBox="0 0 42 30">
+                        <line x1="6" y1="4" x2="6" y2="26" stroke="#FF3D00" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="14" y1="4" x2="14" y2="26" stroke="#FF3D00" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="22" y1="4" x2="22" y2="26" stroke="#FF3D00" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="30" y1="4" x2="30" y2="26" stroke="#FF3D00" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="2" y1="26" x2="36" y2="4" stroke="#8E24AA" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                `;
+            }
+
+            // 余数组：只有红竖线（1 到 4 条）
+            if (remainder > 0) {
+                const width = remainder * 8 + 6;
+                html += `<svg width="${width}" height="30" viewBox="0 0 ${width} 30">`;
+                for (let r = 0; r < remainder; r++) {
+                    const x = 5 + r * 8;
+                    html += `<line x1="${x}" y1="4" x2="${x}" y2="26" stroke="#FF3D00" stroke-width="4" stroke-linecap="round"/>`;
+                }
+                html += `</svg>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // 页面三：初始化
+        function initPage3() {
+            const leftGrid = document.getElementById('left-student-grid');
+            leftGrid.innerHTML = '';
+            classmates.forEach((c) => {
+                const item = document.createElement('div');
+                item.className = 'student-item voted';
+                item.style.opacity = '1';
+                item.innerHTML = `
+                    <div class="student-avatar" style="font-size:1.4rem;">${c.avatar}</div>
+                    <div class="student-choice">${c.choice}</div>
+                `;
+                leftGrid.appendChild(item);
+            });
+
+            const tbody = document.getElementById('tally-tbody');
+            tbody.innerHTML = '';
+            userTallyCounts = [0, 0, 0, 0];
+
+            currentItems.forEach((it, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${it.name}</b> ${it.icon}</td>
+                    <td>
+                        <div id="tally-display-${idx}">${renderTallySVG(0)}</div>
+                        <button class="btn-mini" onclick="addTally(${idx})">+ 1条</button>
+                        <button class="btn-mini" onclick="subTally(${idx})">- 1条</button>
+                    </td>
+                    <td>
+                        <input type="number" class="tally-input" id="tally-input-${idx}" min="0" max="15" placeholder="0">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            p3Attempts = 0;
+            document.getElementById('p3-feedback').innerText = '';
+            document.getElementById('p3-next').classList.add('hidden');
+        }
+
+        function addTally(idx) {
+            if (userTallyCounts[idx] < 10) userTallyCounts[idx]++;
+            updateTallyDisplay(idx);
+        }
+
+        function subTally(idx) {
+            if (userTallyCounts[idx] > 0) userTallyCounts[idx]--;
+            updateTallyDisplay(idx);
+        }
+
+        function updateTallyDisplay(idx) {
+            const num = userTallyCounts[idx];
+            document.getElementById(`tally-display-${idx}`).innerHTML = renderTallySVG(num);
+        }
+
+        function checkPage3Answer() {
+            let allCorrect = true;
+
+            currentItems.forEach((it, idx) => {
+                const inputVal = parseInt(document.getElementById(`tally-input-${idx}`).value);
+                const tallyVal = userTallyCounts[idx];
+                if (inputVal !== it.count || tallyVal !== it.count) {
+                    allCorrect = false;
+                }
+            });
+
+            const fb = document.getElementById('p3-feedback');
+            if (allCorrect) {
+                fb.className = "feedback-box correct";
+                fb.innerText = "🌟 太棒了！记数符号和数值完全正确！";
+                document.getElementById('p3-next').classList.remove('hidden');
+            } else {
+                p3Attempts++;
+                if (p3Attempts < 2) {
+                    fb.className = "feedback-box wrong";
+                    fb.innerText = `💡 记数符号或人数不匹配哦，再数数看！（还有 ${2 - p3Attempts} 次修改机会）`;
+                } else {
+                    fb.className = "feedback-box wrong";
+                    fb.innerText = "没关系，老师帮你补全了正确的记数与人数，我们继续制作统计图吧！";
+                    currentItems.forEach((it, idx) => {
+                        userTallyCounts[idx] = it.count;
+                        updateTallyDisplay(idx);
+                        document.getElementById(`tally-input-${idx}`).value = it.count;
+                    });
+                    document.getElementById('p3-next').classList.remove('hidden');
+                }
+            }
+        }
+
+        // 页面四：初始化
+        function initPage4() {
+            const p4Tbody = document.getElementById('p4-tally-tbody');
+            p4Tbody.innerHTML = '';
+            currentItems.forEach((it) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${it.name}</b> ${it.icon}</td>
+                    <td>${renderTallySVG(it.count)}</td>
+                    <td style="font-weight:bold; color:#0277BD;">${it.count}</td>
+                `;
+                p4Tbody.appendChild(tr);
+            });
+
+            const container = document.getElementById('chart-container');
+            container.innerHTML = '';
+            chartHeights = [0, 0, 0, 0];
+
+            currentItems.forEach((it, colIdx) => {
+                const col = document.createElement('div');
+                col.className = 'chart-column';
+
+                const countDisplay = document.createElement('div');
+                countDisplay.className = 'chart-count';
+                countDisplay.id = `chart-count-${colIdx}`;
+                countDisplay.innerText = '0';
+
+                const blocksContainer = document.createElement('div');
+                blocksContainer.style.display = 'flex';
+                blocksContainer.style.flexDirection = 'column-reverse';
+                blocksContainer.style.width = '100%';
+
+                for (let row = 1; row <= 8; row++) {
+                    const block = document.createElement('div');
+                    block.className = 'chart-block';
+                    block.dataset.row = row;
+                    block.onclick = () => setChartHeight(colIdx, row);
+                    blocksContainer.appendChild(block);
+                }
+
+                const label = document.createElement('div');
+                label.className = 'chart-label';
+                label.innerText = `${it.name}\n${it.icon}`;
+
+                col.appendChild(countDisplay);
+                col.appendChild(blocksContainer);
+                col.appendChild(label);
+                container.appendChild(col);
+            });
+
+            p4Attempts = 0;
+            document.getElementById('p4-feedback').innerText = '';
+            document.getElementById('p4-reset').classList.add('hidden');
+        }
+
+        function setChartHeight(colIdx, height) {
+            if (chartHeights[colIdx] === height) {
+                chartHeights[colIdx] = height - 1;
+            } else {
+                chartHeights[colIdx] = height;
+            }
+
+            document.getElementById(`chart-count-${colIdx}`).innerText = chartHeights[colIdx];
+
+            const cols = document.querySelectorAll('.chart-column');
+            const blocks = cols[colIdx].querySelectorAll('.chart-block');
+
+            blocks.forEach(b => {
+                const r = parseInt(b.dataset.row);
+                if (r <= chartHeights[colIdx]) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+        }
+
+        function checkPage4Answer() {
+            let allCorrect = true;
+            currentItems.forEach((it, idx) => {
+                if (chartHeights[idx] !== it.count) {
+                    allCorrect = false;
+                }
+            });
+
+            const fb = document.getElementById('p4-feedback');
+            if (allCorrect) {
+                fb.className = "feedback-box correct";
+                fb.innerText = "🏆 完美！你独立绘制出了精准的条形统计图！太厉害了！";
+                document.getElementById('p4-reset').classList.remove('hidden');
+            } else {
+                p4Attempts++;
+                if (p4Attempts < 2) {
+                    fb.className = "feedback-box wrong";
+                    fb.innerText = `💪 条形图的高度和左边表格的人数不一致哦，再对照看看！（还有 ${2 - p4Attempts} 次改过机会）`;
+                } else {
+                    fb.className = "feedback-box wrong";
+                    fb.innerText = "真有耐性！老师帮你调整好了正确的统计图，你做得非常棒！";
+                    currentItems.forEach((it, idx) => {
+                        setChartHeight(idx, it.count);
+                    });
+                    document.getElementById('p4-reset').classList.remove('hidden');
+                }
+            }
+        }
+
+        // 重新开始
+        function resetAll() {
+            document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('p1-feedback').innerText = '';
+            document.getElementById('p1-next').classList.add('hidden');
+            goToPage(1);
+        }
+
+        // 初始化
+        renderTopicItems();
+    </script>
+</body>
+</html>
